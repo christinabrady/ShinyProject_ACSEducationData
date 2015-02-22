@@ -116,10 +116,10 @@ acsstates <- c('alabama', 'alaska', 'arizona', 'arkansas', 'california',
                'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 
                'rhode island', 'south carolina', 'south dakota', 'tennessee', 
                'texas', 'utah', 'vermont', 'virginia', 'washington','west virginia', 
-               'wisconsin', 'wyoming', 'puerto rico')
-state.code <- unique(eddata$state_code)
-names(acsstates) <- state.code
-eddata$acs_state_name <- acsstates[eddata$state_code]
+               'wisconsin', 'wyoming')
+names(acsstates) <- unique(eddata$state_code)
+statedf <- data.frame(acs_state_name=acsstates, state_code=unique(eddata$state_code))
+eddata <- merge(eddata, statedf, x.all=TRUE)
 #backup data:
 write.csv(eddata, file= paste(write.dir, "NewCSVs", "acseddata.csv", sep="/"))
 
@@ -129,8 +129,6 @@ states <- unique(state.map$region)
 #calculate state populations and proportions
 state_pop <- aggregate(people~state_code+year, sum, data=eddata)
 colnames(state_pop) <- c('state_code', 'year', 'totalpop')
-
-### need to match 2 columns... this doesn't work
 eddata2 <- merge(eddata, state_pop, by=c("state_code", "year"))
 eddata2$prop <- eddata2$people/eddata2$totalpop * 100
 #check proportions
@@ -139,9 +137,11 @@ check <- aggregate(prop~state_code + year, sum, data=eddata2)
 edprops <- paste(write.dir, "NewCSVs/edprops.csv", sep="/")
 write.csv(eddata2, edprops)
 
-#subset based on the states that are included in ggplot's mapping function
-shinydata <- eddata2[eddata2$acs_state_name %in% states,]
-shinydata2 <- merge(shinydata, state.map, by.x="acs_state_name", by.y="region", all.x=TRUE)
-shinydata2 <- arrange(shinydata2, order)
-phd08 <- subset(shinydata2, school_code==24 & year==2008)
-phd08g <- ggplot(phd_map08, aes(x=long, y=lat, group=group, fill=prop)) +geom_polygon(colour="blue") + coord_map("polyconic")
+#testing with phds from 2008
+shinytest <- subset(eddata2, school_code==24 & year==2008)
+shinytest2 <- merge(shinytest, state.map, by.x="acs_state_name", by.y="region", all.x=TRUE, all.y=TRUE)
+shinytest2 <- arrange(shinytest2, group, order)
+shinytest2g <- ggplot(shinytest2, aes(x=long, y=lat, group=group, fill=prop)) +geom_polygon(colour="blue") + coord_map("polyconic")
+
+#troubleshooting
+shinytest <- arrange(shinytest, state_code)
