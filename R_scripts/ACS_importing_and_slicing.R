@@ -51,7 +51,7 @@ colindeces <- lapply(i, function(i){
 })   
 
 #create a variable to hold the directory address to be used when writing new csv files
-write.dir <- "~/Documents/Coursera courses/Data Science Specialization/Developing Data Products/Shiny Project//R_scripts/"
+write.dir <- "~/Documents/Coursera courses/Data Science Specialization/Developing Data Products/Shiny Project//R_scripts"
 
 #create a function that will read each csv file, group by the state and schl variables 
 #and sum the pwgtp, and create a new data frame that will later be saved as a new csv file
@@ -91,15 +91,15 @@ educ13 <- rbind(educ13a, educ13b, educ13c, educ13d)
 educ13$year <- 2013
 
 #write new csv files in order to have backups
-write.csv(educ13, file=paste(write.dir, "educ13.csv", sep=""), row.names=FALSE)
-write.csv(educ12, file=paste(write.dir, "educ12.csv", sep=""), row.names=FALSE)
-write.csv(educ11, file=paste(write.dir, "educ11.csv", sep=""), row.names=FALSE)
-write.csv(educ10, file=paste(write.dir, "educ10.csv", sep=""), row.names=FALSE)
-write.csv(educ09, file=paste(write.dir, "educ09.csv", sep=""), row.names=FALSE)
-write.csv(educ08, file=paste(write.dir, "educ08.csv", sep=""), row.names=FALSE)
+write.csv(educ13, file=paste(write.dir, "NewCSVs/processededdata", "educ13.csv", sep=""), row.names=FALSE)
+write.csv(educ12, file=paste(write.dir, "NewCSVs/processededdata", "educ12.csv", sep=""), row.names=FALSE)
+write.csv(educ11, file=paste(write.dir, "NewCSVs/processededdata", "educ11.csv", sep=""), row.names=FALSE)
+write.csv(educ10, file=paste(write.dir, "NewCSVs/processededdata", "educ10.csv", sep=""), row.names=FALSE)
+write.csv(educ09, file=paste(write.dir, "NewCSVs/processededdata", "educ09.csv", sep=""), row.names=FALSE)
+write.csv(educ08, file=paste(write.dir, "NewCSVs/processededdata", "educ08.csv", sep=""), row.names=FALSE)
 
 #create a function to read and combine all of the new csv files
-newfiles <- list.files(paste(write.dir, "NewData", sep='/'), full.names=TRUE)
+newfiles <- list.files(paste(write.dir, "NewCSVs/processededdata", sep='/'), full.names=TRUE)
 n <- length(newfiles)
 eddata <- data.frame()
 for(i in 1:n){
@@ -115,11 +115,14 @@ acsstates <- c('alabama', 'alaska', 'arizona', 'arkansas', 'california',
                'new jersey', 'new mexico', 'new york', 'north carolina', 
                'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 
                'rhode island', 'south carolina', 'south dakota', 'tennessee', 
-               'texas', 'utah', 'vermont', 'virginia', 'washington', 'wisconsin', 
-               'wyoming', 'puerto rico')
+               'texas', 'utah', 'vermont', 'virginia', 'washington','west virginia', 
+               'wisconsin', 'wyoming', 'puerto rico')
 state.code <- unique(eddata$state_code)
 names(acsstates) <- state.code
 eddata$acs_state_name <- acsstates[eddata$state_code]
+#backup data:
+write.csv(eddata, file= paste(write.dir, "NewCSVs", "acseddata.csv", sep="/"))
+
 state.map  <- map_data("state")
 states <- unique(state.map$region)
 
@@ -128,17 +131,17 @@ state_pop <- aggregate(people~state_code+year, sum, data=eddata)
 colnames(state_pop) <- c('state_code', 'year', 'totalpop')
 
 ### need to match 2 columns... this doesn't work
-eddata2 <- merge(eddata, state_pop)
+eddata2 <- merge(eddata, state_pop, by=c("state_code", "year"))
 eddata2$prop <- eddata2$people/eddata2$totalpop * 100
 #check proportions
 check <- aggregate(prop~state_code + year, sum, data=eddata2)
 #save work to a csv file
-edprops <- paste(write.dir, "NewData/edprops.csv", sep="")
+edprops <- paste(write.dir, "NewCSVs/edprops.csv", sep="/")
 write.csv(eddata2, edprops)
 
 #subset based on the states that are included in ggplot's mapping function
 shinydata <- eddata2[eddata2$acs_state_name %in% states,]
 shinydata2 <- merge(shinydata, state.map, by.x="acs_state_name", by.y="region", all.x=TRUE)
-phd <- subset(shinydata2, school_code==24)
-phd_map <- arrange(phd, group, order)
-phdg <- ggplot(phd_map, aes(x=long, y=lat, group=group, fill=prop)) +geom_polygon(colour="blue") + coord_map("polyconic")
+shinydata2 <- arrange(shinydata2, order)
+phd08 <- subset(shinydata2, school_code==24 & year==2008)
+phd08g <- ggplot(phd_map08, aes(x=long, y=lat, group=group, fill=prop)) +geom_polygon(colour="blue") + coord_map("polyconic")
